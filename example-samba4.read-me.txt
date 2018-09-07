@@ -1,0 +1,65 @@
+###### IMPORTANT HELP ######
+## Check your routers openwrt firmware UI '/System/Software/Configuration/Distribution feeds'.
+## The first line 'openwrt_core' has the sdk VERSION, TARGET, SUBTARGET strings you need to use and replace in this file!
+## Example: 'src/gz openwrt_core http://downloads.openwrt.org/snapshots/targets/mvebu/cortexa9/packages'
+################## sdk/target/subtarget ##################
+### ('18.06.0', '18.06.1', 'snapshots') sdk version to use
+## HELP: This "should" match your firmware sdk version.
+VERSION="18.06.1"
+
+### target
+## HELP: Check your router openwrt firmware UI '/System/Software/Configuration/Distribution feeds'.
+## alternative check 'https://downloads.openwrt.org/releases/18.06.1/targets/'
+TARGET="mvebu"
+
+### subtarget 
+## HELP: Check your routers openwrt firmware UI '/System/Software/Configuration/Distribution feeds'.
+## Check 'https://downloads.openwrt.org/releases/18.06.1/targets/' subfolder below 'targets/targetname'
+SUBTARGET="cortexa9"
+
+################## official packages ##################
+## TIP: Check the bottom of a feeds/[feedname]/[packagename]/makefile to see all available package names.
+
+### (package names, seperated by space and in quotes) list of packages to build from official feeds.
+## HELP: most useful if 'MENUCONFIG=1' is enabled, to change default build settings
+#PACKAGES=""
+
+################## custom feeds packages ##################
+## HELP: Set the feed location/url and the packages that should be build from it.
+## NOTE: Make sure the [feed name] is unique, if you use multiple custom feeds, many external feeds are named 'extra', just change this to extra_[a,b,c].
+## SYNTAX: FEED_[1-4]="[feed type (src-git, src-link)] [feed name] [feed url, dir]"
+
+FEED_1="src-git extra https://github.com/Andy2244/openwrt-extra.git"
+FEED_1_PACKAGES="samba4-server luci-app-samba4 wsdd2"
+
+#FEED_2=""
+#FEED_2_PACKAGES=""
+
+## The special '@ALL' name can be used to install/build all packages from a FEED. (Use with care on large feeds!)
+#FEED_3="src-git extra https://github.com/Andy2244/openwrt-extra.git"
+#FEED_3_PACKAGES="@ALL"
+
+## Local feeds (src-link) have to-be in the script dir, the path is than given relative from there, without './'
+## 'my-feed' dir exists in the script dir
+#FEED_4="src-link test my-feed"
+#FEED_4_PACKAGES="test_package"
+
+################## patches github ##################
+### Apply github pull request automatically (github pull request/patches list, seperated by space and in quotes)
+## SYNTAX: (Username/Repository#pull request number) https://help.github.com/articles/autolinked-references-and-urls/
+## NOTE: patches for openwrt base feed packages (openwrt/openwrt#) and external github custom feeds, can also be applied in the same way
+
+#PATCHES_GITHUB="openwrt/luci#2071 openwrt/packages#6772 openwrt/packages#6940 openwrt/openwrt#1233"
+
+################## special build/debug options ##################
+
+## (0,1) allows to make config changes to packages via menuconfig
+#MENUCONFIG=1
+
+## (0,1,2) 0 = basic output, 1 = detailed output, 2 = detailed output + debug output (make V=s)
+#DEBUG=1
+
+################## optional options ##################
+
+## list of packages that should be explicitly uninstalled/disabled from default sdk
+#PACKAGES_DISABLE="samba36-server"

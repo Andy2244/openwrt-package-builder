@@ -1,0 +1,527 @@
+#!/bin/bash
+#
+# based on https://github.com/aparcar/meta-imagebuilder
+
+CONFIG_FILE="$1"
+SCRIPT_DIR=$(pwd)
+# stop on error
+set -e
+######################################
+function usage_and_exit {
+	cat<<EOT
+automatic Openwrt Package-Builder.
+
+Usage: $1 [FILE]
+    [FILE].txt   - the config file to-be used (must contain valid VERSION, TARGET, SUBTARGET)
+
+Examples:
+  $1 example.txt
+EOT
+	exit 0
+}
+############################################
+# if run as root
+export FORCE_UNSAFE_CONFIGURE=1
+
+################## Helpers ##################
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+PINK='\033[1;35m'
+CYAN='\033[1;36m'
+NC='\033[0m' # No Color
+
+function echo_red { echo -e "${RED}$*${NC}" ; }
+function echo_green { echo -e "${GREEN}$*${NC}" ; }
+function echo_yellow {  echo -e "${YELLOW}$*${NC}" ; }
+function echo_pink {  echo -e "${PINK}$*${NC}" ; }
+function echo_cyan {  echo -e "${CYAN}$*${NC}" ; }
+
+function die {
+	echo_red $1
+	exit 1
+}
+
+function spinner {
+	local i sp n
+	sp='/-\|'
+	n=${#sp}
+	printf ' '
+	while sleep 0.1; do
+		printf "%s\b" "${sp:i++%n:1}"
+	done
+}
+
+function start_spinner {
+	spinner &
+	SPINNER_PID=$!
+}
+
+function stop_spinner {
+	[[ -n $SPINNER_PID ]] && (kill $SPINNER_PID &>/dev/null)
+	SPINNER_PID=""
+}
+######## early exit #####
+[[ $# -lt 1 ]] && usage_and_exit $0
+[[ -z $1 ]] && die "ERROR: no input config file given"
+################## include external VARS ##################
+if [[ -f $SCRIPT_DIR/$CONFIG_FILE ]]; then
+	echo_yellow "importing config: $CONFIG_FILE"
+	. "$SCRIPT_DIR/$CONFIG_FILE"
+else
+	die "ERROR: file does not exist: $SCRIPT_DIR/$CONFIG_FILE"
+fi
+# check for required VARS
+[[ -n $VERSION ]] || die "missing VERSION in $CONFIG_FILE"
+[[ -n $TARGET ]] || die "missing TARGET in $CONFIG_FILE"
+[[ -n $SUBTARGET ]] || die "missing SUBTARGET in $CONFIG_FILE"
+################## build VARS, Target/Subtarget dirs ##################
+#VERSION="${VERSION:-18.06.1}" # no default version, must be explicitly set via config
+BASE_URL="${BASE_URL:-https://downloads.openwrt.org}" # download sdk's
+TARGETS_URL="$BASE_URL/releases/$VERSION/targets/$TARGET/$SUBTARGET"
+SDK_NAME="sdk-$VERSION-$TARGET-$SUBTARGET"		# sdk name
+SDK_DIR="/$SCRIPT_DIR/$SDK_NAME"  				# where to store sdk
+SDK_STRING="sdk" # search sha256sums for this string to find sdk
+CPU_CORES="$(nproc)"
+MAKE_RESULT=99	# exit code for make build
+# build URL
+if [[ $VERSION == "snapshots" ]]; then
+	TARGETS_URL="$BASE_URL/snapshots/targets/$TARGET/$SUBTARGET"
+	SNAPSHOTS=1
+fi
+# default is no debug
+ERR_OUT="/dev/null"
+STD_OUT="/dev/null"
+if [[ $DEBUG -gt 0 ]]; then
+	# enable
+	ERR_OUT="/dev/stderr"
+	STD_OUT="/dev/stdout"
+fi
+################## Functions ##################
+# parse the sha256sums file to determine the sdk name
+function get_sdk_file {
+	if [[ -f $SCRIPT_DIR/sha256sums ]]; then
+		grep -- "$SDK_STRING" "$SCRIPT_DIR/sha256sums" | awk '{print $2}' | sed 's/*//g'
+	else
+		false
+	fi
+}
+
+# return the architecture of the ImageBuilder based on .config contents
+function get_ib_arch {
+	if [[ -f $SDK_DIR/.config ]]; then
+		grep CONFIG_TARGET_ARCH_PACKAGES "$SDK_DIR"/.config | cut -d= -f2 | tr -d \"
+	else
+		echo "unknown"
+	fi
+}
+
+function extract_keys {
+	if [[ -f $SCRIPT_DIR/keys.tar.gz ]]; then
+		echo_yellow "Extracting $SCRIPT_DIR/keys.tar.gz"
+		tar -xf "$SCRIPT_DIR/keys.tar.gz"
+	else
+		die "ERROR: keys.tar.gz file does not exist."
+	fi
+}
+
+function download_sdk {
+	extract_keys
+
+	echo_yellow "Downloading sha256sums for SDK ($VERSION) for ($TARGET/$SUBTARGET)"
+	rm -f sha256sums sha256sums.asc
+	wget "$TARGETS_URL/sha256sums" -O sha256sums
+	wget "$TARGETS_URL/sha256sums.asc" -O sha256sums.asc
+
+	# LEDE Build System (LEDE GnuPG key for unattended build jobs)
+	gpg --import "$SCRIPT_DIR/626471F1.asc"
+	echo '54CC74307A2C6DC9CE618269CD84BCED626471F1:6:' | gpg --import-ownertrust
+	# LEDE Release Builder (17.01 "Reboot" Signing Key)
+	gpg --import "$SCRIPT_DIR/D52BBB6B.asc"
+	echo 'B09BE781AE8A0CD4702FDCD3833C6010D52BBB6B:6:' | gpg --import-ownertrust
+	# OpenWrt Release Builder (18.06 Signing Key)
+	gpg --import "$SCRIPT_DIR/17E1CE16.asc"
+	echo '6768C55E79B032D77A28DA5F0F20257417E1CE16:6:' | gpg --import-ownertrust
+
+	echo_yellow "Verifying sha256sums signature"
+	gpg --verify sha256sums.asc
+	echo_green "Verified sha256sums signature."
+	
+	if ! (grep -- "$SDK_STRING" sha256sums > sdk.sha256); then
+		die "Can not find $SDK_STRING file in sha256sums. Is \$SDK_STRING out of date?"
+	fi
+	
+	local sdk_file="$(get_sdk_file)"
+	# if missing, outdated or invalid, download again
+	if ! (sha256sum --quiet -c sdk.sha256); then
+		echo_yellow "sha256 doesn't match or SDK file wasn't downloaded yet."
+		echo "Downloading a fresh version from: $TARGETS_URL/$sdk_file"
+		wget "$TARGETS_URL/$sdk_file" -O "$sdk_file"
+	fi
+	
+	# check again and fail here if the file is still bad
+	echo_yellow "Checking sha256sum a second time"
+	if ! (sha256sum --quiet -c sdk.sha256); then
+		die "SDK can not be verified!"
+	else
+		echo_green "SDK verified."
+	fi
+
+	# extract on sdk_update
+	if [[ -f $SDK_DIR/sdk.sha256 && -z $(diff -q sdk.sha256 "$SDK_DIR/sdk.sha256") ]]; then
+		echo_green "same SDK detected in $SDK_DIR, skipping extraction"
+	else
+		echo "extracting SDK: $sdk_file to $SDK_DIR"
+		rm -fR "$SDK_DIR"
+		mkdir -p -m 777 "$SDK_DIR"
+		tar -xf "$sdk_file" --strip=1 -C "$SDK_DIR"
+		cp sdk.sha256 "$SDK_DIR"
+		chown -R 0:0 "$SDK_DIR"
+		cp "$SDK_DIR"/Config.in "$SDK_DIR"/Config.in.org
+		cp "$SDK_DIR"/Config-build.in "$SDK_DIR"/Config-build.in.org
+	fi
+	
+	echo_green "SDK is up-to-date"
+} 2> "$ERR_OUT"
+
+function disable_repos {
+	# sed -e '/src-git luci/ s/^#*/#/' -i "$SDK_DIR"/feeds.conf.default
+	sed -e '/src-git routing/ s/^#*/#/' -i "$SDK_DIR"/feeds.conf.default
+	sed -e '/src-git telephony/ s/^#*/#/' -i "$SDK_DIR"/feeds.conf.default
+}
+
+function fix_config_in {
+	cp "$SDK_DIR"/Config.in.org "$SDK_DIR"/Config.in
+	sed -e '/Select all target specific packages by default/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
+	sed -e '/Select all kernel module packages by default/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
+	sed -e '/Select all userspace packages by default/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
+	sed -e '/Cryptographically sign package lists/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
+	
+	cp "$SDK_DIR"/Config-build.in.org "$SDK_DIR"/Config-build.in
+	if [[ -n $PACKAGES_DISABLE ]]; then
+		local package
+		for package in ${PACKAGES_DISABLE[@]}; do
+			sed -e '/config PACKAGE_$package/!b;n;n;c\\tdefault n' -i "$SDK_DIR"/Config-build.in
+		done
+	fi
+	#sed -e '/config PKG_RELRO_NONE/!b;n;n;c\\tdefault y' -i "$SDK_DIR"/Config-build.in
+	#sed -e '/config PKG_RELRO_FULL/!b;n;n;c\\tdefault n' -i "$SDK_DIR"/Config-build.in
+}
+
+function add_package_config {
+	local feed=$1
+	local package
+	if [[ -n $feed ]]; then
+		for package in ${feed[@]}; do
+			echo "CONFIG_PACKAGE_$package=m" >> .config
+		done
+	fi
+}
+
+function create_config {
+	# restore and modify config.in/Config-build.in
+	fix_config_in
+	
+	echo_yellow "Creating .config"
+
+	cd "$SDK_DIR"
+	echo "" > .config
+
+	add_package_config "$PACKAGES"
+	add_package_config "$FEED_1_PACKAGES"
+	add_package_config "$FEED_2_PACKAGES"
+	add_package_config "$FEED_3_PACKAGES"
+	add_package_config "$FEED_4_PACKAGES"
+
+	if [[ $MENUCONFIG -eq 1 ]]; then
+		make menuconfig
+	else
+		make defconfig 1> "$STD_OUT"
+	fi
+
+	cd "$SCRIPT_DIR"
+} 2> "$ERR_OUT"
+
+function remove_empty_feeds {
+	local feeds="$(ls -d $SDK_DIR/bin/packages/*/*)"
+	if [[ -n $feeds ]]; then
+		local feed
+		# carefull we 'rm -fR' via constructed strings!
+		for feed in ${feeds[@]}; do
+			if [[ -d $feed ]]; then
+				# remove empty feeds
+				if [[ ! -f $feed/Packages.manifest || $(stat --printf="%s" $feed/Packages.manifest) -lt 5 ]]; then
+					echo -e "Removing empty feed dir $feed"
+					$SUDO rm -fR "$feed"
+				fi
+			fi
+		done
+	fi
+}
+
+function build_packages {
+	echo_green "Building packages"
+
+	cd "$SDK_DIR"
+	# just a basic clean
+	#make clean
+
+	# always use ccache?
+	# CONFIG_CCACHE=y
+	rm -f "$SCRIPT_DIR/.build_result"
+	if [[ $DEBUG -eq 2 ]]; then
+		CONFIG_CCACHE=y make V=s
+	else
+		CONFIG_CCACHE=y make -j$CPU_CORES
+	fi
+	MAKE_RESULT=$?
+	echo "$MAKE_RESULT" > "$SCRIPT_DIR/.build_result"
+	
+	remove_empty_feeds
+	
+	cd "$SCRIPT_DIR"
+} 2> "$ERR_OUT"
+
+function update_feeds {
+	echo_yellow "Updating feeds"
+	# update feeds (./scripts/feeds clean ???)
+	#"$SDK_DIR"/scripts/feeds clean
+	
+	if [[ $DEBUG -eq 0 ]]; then
+		start_spinner
+		"$SDK_DIR"/scripts/feeds update -f -a 1> "$STD_OUT"
+		stop_spinner
+	else
+		"$SDK_DIR"/scripts/feeds update -f -a
+	fi
+} 2> "$ERR_OUT"
+
+# packages, feedname (don't use 'install -f')
+function install_package {
+	if [[ -n $1 && -n $2 ]]; then
+		if [[ $1 == *"@ALL"* ]]; then
+			echo -e "Installing ${GREEN}@ALL${NC} packages from ${YELLOW}$2${NC}"
+			"$SDK_DIR"/scripts/feeds install -d m -p $2 $1
+		else
+			echo -e "Installing ${GREEN}$1${NC} from ${YELLOW}$2${NC}"
+			"$SDK_DIR"/scripts/feeds install -p $2 $1
+		fi
+	elif [[ -n $1 && -z $2 ]]; then
+		if [[ $1 = *"@ALL"* ]]; then
+			# no @ALL for official (too many packages!)
+			die "ERROR: @ALL is not supported for official feeds."
+		fi
+		echo -e "Installing ${GREEN}$1${NC} from ${YELLOW}official feeds${NC}"
+		"$SDK_DIR"/scripts/feeds install $1
+	fi
+}
+
+#TODO: convert to loop with var substitution
+function install_packages_feeds {
+	"$SDK_DIR/scripts/feeds" update -i 2> "$ERR_OUT" 1> "$STD_OUT"
+	"$SDK_DIR/scripts/feeds" uninstall -a 1> "$STD_OUT"
+	# for signing we need base-files
+	#BUG: get a segfault on debian:stretch-slim
+	#"$SDK_DIR"/scripts/feeds install base-files 1> "$STD_OUT"
+	
+	install_package "$PACKAGES"
+	install_package "$FEED_1_PACKAGES" $(echo $FEED_1 | cut -d " " -f 2)
+	install_package "$FEED_2_PACKAGES" $(echo $FEED_2 | cut -d " " -f 2)
+	install_package "$FEED_3_PACKAGES" $(echo $FEED_3 | cut -d " " -f 2)
+	install_package "$FEED_4_PACKAGES" $(echo $FEED_4 | cut -d " " -f 2)
+} 2> "$ERR_OUT"
+
+function fix_local_feeds {
+	if [[ $1 == "src-link"* ]]; then
+		local feed_dir=$(echo $1 | cut -d " " -f 3)
+		local feed_name=$(echo $1 | cut -d " " -f 2)
+		if [[ -d /hostdir/$feed_dir && -n $feed_name ]]; then
+			echo "src-link $feed_name /hostdir/$feed_dir"
+			return 0
+		else
+			die "local feeds '$1' does not exist!"
+		fi
+	fi
+	echo "$1"
+}
+
+function add_feeds {
+	[[ -f $SDK_DIR/feeds.conf.default ]] || die "ERROR: could not find $SDK_DIR/feeds.conf.default"
+	# not ideal, but config parameters are easier to understand than a \n ';' list of feeds, package grouping per feed is also clearer
+	
+	FEED_1=$(fix_local_feeds "$FEED_1")
+	FEED_2=$(fix_local_feeds "$FEED_2")
+	FEED_3=$(fix_local_feeds "$FEED_3")
+	FEED_4=$(fix_local_feeds "$FEED_4")
+	
+	echo_yellow "adding custom feeds"
+	cp "$SDK_DIR"/feeds.conf.default "$SDK_DIR"/feeds.conf
+	if [[ -n $FEED_1 ]]; then
+		echo "$FEED_1" >> "$SDK_DIR"/feeds.conf
+	fi
+	if [[ -n $FEED_2 ]]; then
+		echo "$FEED_2" >> "$SDK_DIR"/feeds.conf
+	fi
+	if [[ -n $FEED_3 ]]; then
+		echo "$FEED_3" >> "$SDK_DIR"/feeds.conf
+	fi
+	if [[ -n $FEED_4 ]]; then
+		echo "$FEED_4" >> "$SDK_DIR"/feeds.conf
+	fi
+}
+
+# $@ = feeds
+function apply_patches {
+	local patch_files="$(ls "$SCRIPT_DIR"/patches-*-${VERSION}.tar.gz 2>/dev/null )"
+	if [[ -z $patch_files ]]; then
+		return 0
+	fi
+	local file
+	for file in ${patch_files[@]}; do
+		if [[ -f $file ]]; then
+			local feed=$(basename "$file" | cut -d '-' -f 2 | tr -d '"[:cntrl:]')
+			# if (sha256sum --quiet -c "$file.sha256"); then
+				# continue
+			# fi
+			if [[ -d $SDK_DIR/feeds/$feed ]]; then
+				echo_yellow "Applying patches from $file to $SDK_DIR/feeds/$feed/"
+				tar -xf "$file"
+				find "$(pwd -P)" -maxdepth 1 -type f -name '*.patch' -exec patch -r - --strip=1 -d "$SDK_DIR/feeds/$feed/" -Ns -i {} \;
+				rm -f *.patch
+				# sha256sum -b "$file" > "$file.sha256"
+			else
+				echo_red "Could not apply patches from $file, since $SDK_DIR/feeds/$feed/ does not exist!"
+			fi
+		fi
+	done
+	# need to remove patch files, so if host removes them we don't reapply or use outdated!
+	rm -f patches-*.tar.gz
+} 2> "$ERR_OUT" 1> "$STD_OUT"
+
+# NOTE: openwrt uses its own git servers, so special handle those feeds, also base feed should work
+function apply_patches_github {
+	if [[ -z $PATCHES_GITHUB || ! -d $SDK_DIR/feeds ]]; then
+		return 0
+	fi
+	mkdir -p -m 777 "$SCRIPT_DIR/.patches_github"
+
+	local pr_github
+	for pr_github in ${PATCHES_GITHUB[@]}; do
+		local user=$(echo $pr_github | cut -d "#" -f 1 | cut -d "/" -f 1)
+		local repo=$(echo $pr_github | cut -d "#" -f 1 | cut -d "/" -f 2)
+		local pr_nr=$(echo $pr_github | cut -d "#" -f 2)
+		if [[ -z $user || -z $repo || -z pr_nr ]]; then
+			echo_red "ERROR: invalid entry in 'PATCHES_GITHUB' found: '$pr_github', skipping!"
+			continue
+		fi
+		local filename="$user-$repo-${pr_nr}.patch"
+		if [[ ! -f $SCRIPT_DIR/.patches_github/$filename ]]; then
+			local url="https://github.com/$user/$repo/pull/${pr_nr}.patch"
+			curl -L -o "$SCRIPT_DIR/.patches_github/$filename" "$url" 2> "$ERR_OUT" 1> "$STD_OUT"
+		fi
+		# try again
+		if [[ -f $SCRIPT_DIR/.patches_github/$filename ]]; then
+			# special handling for 'base' feed
+			if [[ $user == "openwrt" && $repo == "openwrt" ]]; then
+				repo="base"
+			fi
+			# assume repo = feed dir name (only for openwrt)
+			if [[ $user == "openwrt" ]]; then
+				if [[ -d $SDK_DIR/feeds/$repo/ ]]; then
+					echo -e "Patching github PR ${GREEN}$pr_github${NC} into ${YELLOW} $SDK_DIR/feeds/$repo/ ${NC}"
+					#set +e
+					patch -r - --strip=1 -d "$SDK_DIR/feeds/$repo/" -Ns -i "$SCRIPT_DIR/.patches_github/$filename"
+					#set -e
+				else
+					echo_red "ERROR: can't find feed dir $SDK_DIR/feeds/$repo/ , skipping $pr_github"
+				fi
+			else
+				# handle custom feed PR
+				local feeds_path="$(ls -d $SDK_DIR/feeds/*/ | grep -vE ".tmp")"
+				local feed
+				for feed in ${feeds_path[@]}; do
+					if [[ -d $feed/.git ]]; then
+						local url="$(cd $feed && (git config --get remote.origin.url 2> "$ERR_OUT"))"
+						if [[ -n $url && $url == *"$user/$repo"* ]]; then
+							echo -e "Patching github PR ${GREEN}$pr_github${NC} into ${YELLOW} $feed ${NC}"
+							patch -r - --strip=1 -d "$feed" -Ns -i "$SCRIPT_DIR/.patches_github/$filename"
+							break
+						fi
+					fi
+				done
+			fi
+		fi
+	done
+}
+
+# $1 = timeout
+function build_abort {
+	set +e
+	read -t $1 -p "Hit ENTER to abort or wait $1 seconds to continue!"
+	local status=$?
+	if [[ $status -eq 0 ]]; then
+		exit 1
+	fi
+	echo
+	set -e
+}
+
+function cleanup {
+	rm -Rf "$SDK_DIR/tmp/"
+	
+	if [[ $BUILD_QUICK -ne 1 ]]; then
+		rm -Rf "$SDK_DIR/bin/"
+		rm -Rf "$SCRIPT_DIR/.patches_github"
+		rm -f "$SCRIPT_DIR/.build_result"
+		
+		if [[ -d $SDK_DIR/feeds ]]; then
+			# reset/clean git so patches can be reapplied correctly
+			local feeds_path="$(ls -d $SDK_DIR/feeds/*/ | grep -vE ".tmp")"
+			local feed
+			for feed in ${feeds_path[@]}; do
+				if [[ -d $feed/.git ]]; then
+					(cd $feed && (git reset --hard 2> "$ERR_OUT" 1> "$STD_OUT" ; git clean -fdx 2> "$ERR_OUT" 1> "$STD_OUT" ))
+				fi
+			done
+		fi
+	fi
+}
+####################################################################################
+# do we have anything to-do?
+[[ -z $PACKAGES && -z $FEED_1_PACKAGES && -z $FEED_2_PACKAGES && -z $FEED_3_PACKAGES && -z $FEED_4_PACKAGES ]] && die "no packages to build from $CONFIG_FILE"
+
+echo_green "********************* SDK is $VERSION for $TARGET/$SUBTARGET from $CONFIG_FILE *********************"
+
+if [[ ! -f $SDK_DIR/Makefile || ! -d $SDK_DIR/feeds ]]; then
+	BUILD_QUICK=0
+fi
+
+if [[ $BUILD_QUICK -eq 1 ]]; then
+	echo_pink "********************* This is a 'build_quick' run, sdk/feeds updates are disabled, build cache is reused!"
+	build_abort 4
+	cleanup
+
+	add_feeds
+else
+	# should trigger 'build-clean'
+	build_abort 4
+	cleanup
+
+	download_sdk
+	add_feeds
+	update_feeds
+	apply_patches_github
+	apply_patches
+fi
+
+install_packages_feeds
+create_config
+
+#bash
+build_packages
+
+if [[ $MAKE_RESULT -eq 0 ]]; then
+	echo_pink "********************* Package build succeeded, exiting *********************"
+else
+	echo_red "********************* Package build failed, exiting *********************"
+fi
