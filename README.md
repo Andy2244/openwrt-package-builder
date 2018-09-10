@@ -21,7 +21,6 @@ ALL Versions:
 Windows:
 * Virtualisation capable CPU and enabled in Bios (Intel VT or AMD-V)
 * Windows 10 Pro, Enterprise and Education, (Build > 1607)
-* Admin Powershell v4.0+
 * _requirements can be tested via_ ```.\builder.ps1```
 
 Mac:
@@ -34,8 +33,8 @@ install Docker for your system [Win](https://download.docker.com/win/stable/Dock
 Linux: _for quick installation on Linux try the official Docker [convenience script](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-convenience-script)_
 
 Windows: it is recommend to use Docker in 'LCOW' mode, to-do so:
-* check 'use Windows Containers instead of Linux Containers' during installation or 'Switch to Windows Containers' via docker tray
-* enable 'Experimental features' via Docker tray Settings/Daemon
+* check _use Windows Containers instead of Linux Containers_ during installation or _Switch to Windows Containers_ via docker tray
+* enable _Experimental features_ via Docker tray _Settings/Daemon_
 
 * get/unpack the script via [release page](https://github.com/Andy2244/openwrt-package-builder/releases) (zip/tar) or ```git clone https://github.com/Andy2244/openwrt-package-builder.git```
 
