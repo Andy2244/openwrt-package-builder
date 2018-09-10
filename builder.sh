@@ -24,7 +24,7 @@ CPREFIX="openwrt_pb"
 if ! (sudo -v &>/dev/null); then
 	SUDO=
 fi
-if (timedatectl &>/dev/null); then
+if (timedatectl --version &>/dev/null); then
 	MY_TZ=$(timedatectl 2>/dev/null | grep "Time zone" | awk '{print $3}')
 elif [ -f /etc/timezone ]; then
 	MY_TZ=$(cat /etc/timezone)
@@ -32,7 +32,7 @@ fi
 if (systemctl --version &>/dev/null); then
 	SYSTEMD=1
 fi
-if (docker version &>/dev/null); then
+if (docker -v &>/dev/null); then
 	DOCKER_VERSION=$(docker version -f '{{.Client.Version}}' 2>/dev/null)
 fi
 ############### stop on error ###############
