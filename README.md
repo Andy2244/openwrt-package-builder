@@ -28,14 +28,12 @@ Mac:
 * macOS El Capitan 10.11 and newer
 
 ### Installation
-install Docker for your system [Win](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe), [Mac](https://download.docker.com/mac/stable/Docker.dmg), [Linux](https://docs.docker.com/install/#supported-platforms)
-
-Linux: _for quick installation on Linux try the official Docker [convenience script](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-convenience-script)_
+install Docker for your system [Win](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe), [Mac](https://download.docker.com/mac/stable/Docker.dmg), [Linux](https://docs.docker.com/install/#supported-platforms)\
+_For quick installation on Linux try the official Docker [convenience script](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-convenience-script)._
 
 Windows: it is recommend to use Docker in 'LCOW' mode, to-do so:
 * check _use Windows Containers instead of Linux Containers_ during installation or _Switch to Windows Containers_ via docker tray
 * enable _Experimental features_ via Docker tray _Settings/Daemon_
-
 * get/unpack the script via [release page](https://github.com/Andy2244/openwrt-package-builder/releases) (zip/tar) or ```git clone https://github.com/Andy2244/openwrt-package-builder.git```
 
 ### Useage
