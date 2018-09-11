@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+*.patch -text
+*.sh eol=lf
+*.in eol=lf
+*.ps1 eol=crlf
+*.txt eol=crlf
