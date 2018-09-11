@@ -63,3 +63,4 @@ FEED_1_PACKAGES="samba4-server luci-app-samba4 wsdd2"
 
 ## list of packages that should be explicitly uninstalled/disabled from default sdk
 #PACKAGES_DISABLE="samba36-server"
+

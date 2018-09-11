@@ -522,3 +522,4 @@ if ( ! [string]::IsNullOrEmpty($CMD) -and ! [string]::IsNullOrEmpty($FILE) ) {
 } else {
   fail "Invalid arguments `'CMD:$CMD`', `'FILE:$FILE`'"
 }
+
