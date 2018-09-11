@@ -29,7 +29,7 @@ Mac:
 
 ### Installation
 * install Docker for your system [Win](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe), [Mac](https://download.docker.com/mac/stable/Docker.dmg), [Linux](https://docs.docker.com/install/#supported-platforms)\
-_For quick installation on Linux try the official Docker [convenience script](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-convenience-script)._\
+_For quick installation on Linux try the official Docker [convenience script](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-convenience-script)._
 * Get/unpack the script via [release page](https://github.com/Andy2244/openwrt-package-builder/releases) (zip/tar) or ```git clone https://github.com/Andy2244/openwrt-package-builder.git```
 
 Windows: it is recommend to use Docker in 'LCOW' mode, to-do so:
