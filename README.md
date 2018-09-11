@@ -7,9 +7,9 @@ The package-builder script ```builder.sh/.ps1``` will setup, compile and can pat
 * fully isolated build environment, utilizing [Docker](https://docs.docker.com/install/) for Linux, Windows and Mac
 * automatic setup of a openwrt package build environment, via official sdk
 * automatic management/update of sdk versions to compile against ('18.06.0', '18.06.1', 'snapshots')
-* automatic patch support via localy provided patches or github PR numbers in config
+* automatic patch support via locally provided patches or github PR numbers in config
 * local feed support
-* ability to localy host the build packages via a tiny webserver
+* ability to locally host the build packages via a tiny webserver
 * debug support, via config options or manual shell access into the docker containers
 
 ### Requirements
