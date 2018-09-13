@@ -4,7 +4,7 @@
 The package-builder script ```builder.sh/.ps1``` will setup, compile and can patch, host openwrt packages from official or custom openwrt feeds, via a config .txt file. It handles all task's automatically and only requires editing/creating the config files.
 
 ### Features
-* fully isolated build environment, utilizing [Docker](https://docs.docker.com/install/) for Linux, Windows and Mac
+* fully isolated build environment, utilizing [Docker](https://docs.docker.com/install/) for Linux, Windows and _(Mac broken atm)_
 * automatic setup of a openwrt package build environment, via official sdk
 * automatic management/update of sdk versions to compile against ('18.06.0', '18.06.1', 'snapshots')
 * automatic patch support via locally provided patches or github PR numbers in config
