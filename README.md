@@ -23,7 +23,7 @@ Windows:
 * Windows 10 Pro, Enterprise and Education, (Build > 1607)
 * _requirements can be tested via_ ```.\builder.ps1```
 
-Mac:
+_Mac: (broken atm, working on fixing the scripts)_
 * Virtualisation capable CPU and enabled in Bios (Intel VT or AMD-V)
 * macOS El Capitan 10.11 and newer
 
