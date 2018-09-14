@@ -15,12 +15,18 @@ MY_TERM="${TERM:-xterm-256color}"
 MY_HOSTNAME="docker_pb"
 MY_TZ="UTC"
 SUDO=sudo
+ECHOX="echo -e"
 SYSTEMD=0
 # base Tag to use for docker image
 IMAGE_TAG="andy2222/docker-openwrt-sdk-base"
 IMAGE_TAG_HOST="pierrezemb/gostatic"
 CPREFIX="openwrt_pb"
 #############################################
+if [ "$PLATFORM" == "Darwin" ]; then
+	ECHOX="echo"
+	#sudo has 5 min timeout by default...
+	#sudo sh -c 'echo "\nDefaults timestamp_timeout=20">>/etc/sudoers'
+fi
 if ! (sudo -v &>/dev/null); then
 	SUDO=
 fi
@@ -39,7 +45,7 @@ fi
 set -e
 #############################################
 function fail {
-	echo -e "****** ${RED}ERROR: $*${NC}" >&2
+	$ECHOX "****** ${RED}ERROR: $*${NC}" >&2
 	exit 1
 }
 
@@ -167,7 +173,7 @@ function run_clean {
 }
 
 function run_update_images {
-	echo -e "${YELLOW}updating Docker images${NC}"
+	$ECHOX "${YELLOW}updating Docker images${NC}"
 	$SUDO docker pull $IMAGE_TAG
 	$SUDO docker pull $IMAGE_TAG_HOST
 	$SUDO docker image prune -f
@@ -200,40 +206,40 @@ function run_host_packages {
 		fail "Nothing to host found in $host_dir"
 	fi
 	
-	echo -e "Hosting ${YELLOW} $host_dir ${NC} via URL ${GREEN} http://${hostname}:8043/$VERSION/ ${NC}"
-	echo -e "These lines can be used via your ${YELLOW} router luci UI ${NC} under ${YELLOW} 'System/Software/Configuration' ${NC} in the ${YELLOW} 'Custom feeds' ${NC} field."
-	echo -e "${YELLOW}IMPORTANT${NC}: Make sure you ${YELLOW}disable 'Distribution feeds'${NC} that contain packages with the ${YELLOW}same name.${NC} (add '#' at the beginning)"
-	echo -e "\t Otherwise your rebuild packages will NOT be listed and overwritten by the default 'Distribution feeds'!"
-	echo -e "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	$ECHOX "Hosting ${YELLOW} $host_dir ${NC} via URL ${GREEN} http://${hostname}:8043/$VERSION/ ${NC}"
+	$ECHOX "These lines can be used via your ${YELLOW} router luci UI ${NC} under ${YELLOW} 'System/Software/Configuration' ${NC} in the ${YELLOW} 'Custom feeds' ${NC} field."
+	$ECHOX "${YELLOW}IMPORTANT${NC}: Make sure you ${YELLOW}disable 'Distribution feeds'${NC} that contain packages with the ${YELLOW}same name.${NC} (add '#' at the beginning)"
+	$ECHOX "\t Otherwise your rebuild packages will NOT be listed and overwritten by the default 'Distribution feeds'!"
+	$ECHOX "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	if [ -n "$official_feeds" ] || [ "$has_core" -eq 1 ]; then
-		echo -e "${YELLOW}If you ${RED}did${YELLOW} customize or patch${NC} official packages, use these lines, otherwise not needed."
-		echo -e "${YELLOW}NOTE:${NC} Those should also be added via the ${YELLOW} 'Custom feeds' ${NC} field."
-		echo -e "${YELLOW}Custom official feeds entries${NC}"
+		$ECHOX "${YELLOW}If you ${RED}did${YELLOW} customize or patch${NC} official packages, use these lines, otherwise not needed."
+		$ECHOX "${YELLOW}NOTE:${NC} Those should also be added via the ${YELLOW} 'Custom feeds' ${NC} field."
+		$ECHOX "${YELLOW}Custom official feeds entries${NC}"
 		if [ "$has_core" -eq 1 ]; then
-			echo -e "\t${GREEN}src/gz local_core http://${hostname}:8043/$VERSION/targets/$TARGET/$SUBTARGET/packages${NC}"
+			$ECHOX "\t${GREEN}src/gz local_core http://${hostname}:8043/$VERSION/targets/$TARGET/$SUBTARGET/packages${NC}"
 		fi
 		local ofeed
 		for ofeed in ${official_feeds[@]}; do
 			if [ -f "$ofeed/Packages.manifest" ]; then
 				local feed_name="$(basename $ofeed)"
-				echo -e "\t${GREEN}src/gz local_${feed_name} http://${hostname}:8043/$VERSION/packages/$arch/$feed_name${NC}"
+				$ECHOX "\t${GREEN}src/gz local_${feed_name} http://${hostname}:8043/$VERSION/packages/$arch/$feed_name${NC}"
 			fi
 		done
-		echo -e "------------------------------------------------------------------------------------------------------------------------------------------------------"
+		$ECHOX "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	fi
 	if [ -n "$custom_feeds" ]; then
-		echo -e "${YELLOW}Custom feeds entries${NC}"
+		$ECHOX "${YELLOW}Custom feeds entries${NC}"
 		local cfeed
 		for cfeed in ${custom_feeds[@]}; do
 			if [ -f "$cfeed/Packages.manifest" ]; then
 				local feed_name="$(basename $cfeed)"
-				echo -e "\t${GREEN}src/gz local_${feed_name} http://${hostname}:8043/$VERSION/packages/$arch/$feed_name${NC}"
+				$ECHOX "\t${GREEN}src/gz local_${feed_name} http://${hostname}:8043/$VERSION/packages/$arch/$feed_name${NC}"
 			fi
 		done
-		echo -e "------------------------------------------------------------------------------------------------------------------------------------------------------"
+		$ECHOX "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	fi
-	echo -e "${YELLOW}NOTE:${NC} Make sure to disable 'Distribution feeds' that contain packages with the same names, or you wont see your updated versions!"
-	echo -e "use ${RED} CTRL-C ${NC} to stop hosting!"
+	$ECHOX "${YELLOW}NOTE:${NC} Make sure to disable 'Distribution feeds' that contain packages with the same names, or you wont see your updated versions!"
+	$ECHOX "use ${RED} CTRL-C ${NC} to stop hosting!"
 
 	$SUDO docker run --rm -ti \
 	--name "$1" \
@@ -258,10 +264,10 @@ function copy_packages {
 		$SUDO mkdir -p -m 777 "$SCRIPT_DIR/$bin_dir/"
 		$SUDO docker cp "${1}:$dst_dir" "$SCRIPT_DIR/$bin_dir/"
 		#$SUDO chmod -fR `id -u`:`id -g` "$SCRIPT_DIR/$bin_dir/"
-		echo -e "************* ${GREEN}Valid build result${NC} found, copying packages to ${GREEN} $SCRIPT_DIR/$bin_dir/ ${NC}"
-		echo -e "************* Build results can now be locally hosted for installation via: ${GREEN} $0 host $FILE ${NC}"
+		$ECHOX "************* ${GREEN}Valid build result${NC} found, copying packages to ${GREEN} $SCRIPT_DIR/$bin_dir/ ${NC}"
+		$ECHOX "************* Build results can now be locally hosted for installation via: ${GREEN} $0 host $FILE ${NC}"
 	else
-		echo -e "Problem detected you can debug by setting ${GREEN}'DEBUG=2'${NC} in ${YELLOW}$FILE${NC} or open a shell via: ${GREEN} $0 shell $FILE ${NC}"
+		$ECHOX "Problem detected you can debug by setting ${GREEN}'DEBUG=2'${NC} in ${YELLOW}$FILE${NC} or open a shell via: ${GREEN} $0 shell $FILE ${NC}"
 		fail "No .build_result found in $1 or last build failed, skipping copy!"
 	fi
 	$SUDO rm -f build_result.out
@@ -300,9 +306,9 @@ function create_patches {
 # assume mixed or windows CRLF!
 function import_config {
 	if [ -f "$1" ]; then
-		VERSION=$(sed -n -r -e '/^VERSION ?=/ s/.*\= *//p' "$1" | tr -d '"[:cntrl:]')
-		TARGET=$(sed -n -r -e '/^TARGET ?=/ s/.*\= *//p' "$1" | tr -d '"[:cntrl:]')
-		SUBTARGET=$(sed -n -r -e '/^SUBTARGET ?=/ s/.*\= *//p' "$1" | tr -d '"[:cntrl:]')
+		VERSION=$(sed -n -E -e '/^VERSION ?=/ s/.*\= *//p' "$1" | tr -d '"[:cntrl:]')
+		TARGET=$(sed -n -E -e '/^TARGET ?=/ s/.*\= *//p' "$1" | tr -d '"[:cntrl:]')
+		SUBTARGET=$(sed -n -E -e '/^SUBTARGET ?=/ s/.*\= *//p' "$1" | tr -d '"[:cntrl:]')
 	else
 		fail "file does not exist: $1"
 	fi
@@ -310,32 +316,37 @@ function import_config {
 	[ -n "$VERSION" ] || fail "missing VERSION in $1"
 	[ -n "$TARGET" ] || fail "missing TARGET in $1"
 	[ -n "$SUBTARGET" ] || fail "missing SUBTARGET in $1"
-	echo -e "${GREEN}Config imported${NC} with:"
-	echo -e "SDK          ${YELLOW}$VERSION${NC}"
-	echo -e "Target       ${GREEN}$TARGET${NC}"
-	echo -e "Subtarget    ${GREEN}$SUBTARGET${NC}"
+	$ECHOX "${GREEN}Config imported${NC} with:"
+	$ECHOX "SDK          ${YELLOW}$VERSION${NC}"
+	$ECHOX "Target       ${GREEN}$TARGET${NC}"
+	$ECHOX "Subtarget    ${GREEN}$SUBTARGET${NC}"
 	echo "---------------------------"
 }
 
 function has_docker {
 	if [ -z "$DOCKER_VERSION" ]; then
-		echo -e "Install Docker first, check ${GREEN} https://docs.docker.com/install/ ${NC}"
+		$ECHOX "Install Docker first, check ${GREEN} https://docs.docker.com/install/ ${NC}"
 
 		case $PLATFORM in
 			Linux)
-				echo -e "Alternatively you can quickly install via the official ${YELLOW}Docker Edge convenience script:${NC}"
-				echo -e "> ${GREEN}curl -fsSL https://get.docker.com -o get-docker.sh ${NC}"
-				echo -e "> ${GREEN}sudo sh get-docker.sh ${NC}"
+				$ECHOX "Alternatively you can quickly install via the official ${YELLOW}Docker Edge convenience script:${NC}"
+				$ECHOX "> ${GREEN}curl -fsSL https://get.docker.com -o get-docker.sh ${NC}"
+				$ECHOX "> ${GREEN}sudo sh get-docker.sh ${NC}"
 				;;
 			Darwin)
-				echo -e "Direct download link: ${GREEN} https://download.docker.com/mac/stable/Docker.dmg ${NC}"
-				echo -e "Make sure you meet the requirements, see: https://docs.docker.com/docker-for-mac/install/#what-to-know-before-you-install"
-				echo -e "\t macOS El Capitan 10.11 and newer"
-				echo -e "\t ${YELLOW}Virtualisation capable CPU${NC} and enabled in Bios (Intel VT or AMD-V)"
-				echo -e "\t\t test via: ${GREEN} sysctl kern.hv_support ${NC}"
+				$ECHOX "Direct download link: ${GREEN} https://download.docker.com/mac/stable/Docker.dmg ${NC}"
+				$ECHOX "Make sure you meet the requirements, see: https://docs.docker.com/docker-for-mac/install/#what-to-know-before-you-install"
+				$ECHOX "\t macOS El Capitan 10.11 and newer"
+				$ECHOX "\t ${YELLOW}Virtualisation capable CPU${NC} and enabled in Bios (Intel VT or AMD-V)"
+				local hv_support=$($SUDO sysctl kern.hv_support | awk '{print $2}')
+				if [ $hv_support -eq 1 ]; then
+					$ECHOX "\t\t ${GREEN} Virtualisation detected ${NC}"
+				else
+					$ECHOX "\t\t ${RED} Virtualisation not detected, incompatible CPU or disabled via Bios. ${NC}"
+				fi
 				;;
 			*)
-				echo -e "${YELLOW}untested OS detected!${NC}"
+				$ECHOX "${YELLOW}untested OS detected!${NC}"
 				;;
 		esac
 
