@@ -37,7 +37,7 @@ Windows: it is recommend to use Docker in 'LCOW' mode, to-do so:
 - enable _Experimental features_ via Docker tray _Settings/Daemon_
 
 Mac:
-macOS might ask multiple times per run for your _SUDO_ password, thats because the default _SUDO_ timeout is 5 minutes, which can be changed to 30 minutes via:\
+- macOS might ask multiple times per run for your _SUDO_ password, thats because the default _SUDO_ timeout is 5 minutes, which can be changed to 30 minutes via:\
 ```sudo sh -c 'echo "\nDefaults timestamp_timeout=30">>/etc/sudoers'```
 
 ### Useage
