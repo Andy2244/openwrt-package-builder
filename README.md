@@ -4,7 +4,7 @@
 The package-builder script ```builder.sh/.ps1``` will setup, compile and can patch, host openwrt packages from official or custom openwrt feeds, via a config .txt file. It handles all task's automatically and only requires editing/creating the config files.
 
 ### Features
-* fully isolated build environment, utilizing [Docker](https://docs.docker.com/install/) for Linux, Windows and _(Mac broken atm)_
+* fully isolated build environment, utilizing [Docker](https://docs.docker.com/install/) for Linux, Windows and Mac
 * automatic setup of a openwrt package build environment, via official sdk
 * automatic management/update of sdk versions to compile against ('18.06.0', '18.06.1', 'snapshots')
 * automatic patch support via locally provided patches or github PR numbers in config
@@ -23,7 +23,7 @@ Windows:
 * Windows 10 Pro, Enterprise and Education, (Build > 1607)
 * _requirements can be tested via_ ```.\builder.ps1```
 
-_Mac: (broken atm, working on fixing the scripts)_
+Mac:
 * Virtualisation capable CPU and enabled in Bios (Intel VT or AMD-V)
 * macOS El Capitan 10.11 and newer
 
@@ -36,6 +36,9 @@ Windows: it is recommend to use Docker in 'LCOW' mode, to-do so:
 - check _use Windows Containers instead of Linux Containers_ during installation or _Switch to Windows Containers_ via docker tray
 - enable _Experimental features_ via Docker tray _Settings/Daemon_
 
+Mac:
+macOS might ask multiple times per run for your _SUDO_ password, thats because the default _SUDO_ timeout is 5 minutes, which can be changed to 30 minutes via:\
+```sudo sh -c 'echo "\nDefaults timestamp_timeout=30">>/etc/sudoers'```
 
 ### Useage
 * check the examples and create a config file for your router/sdk
