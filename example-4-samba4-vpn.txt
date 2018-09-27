@@ -9,12 +9,10 @@ SUBTARGET="cortexa9"
 PACKAGES="samba4-server"
 
 FEED_1="src-git extra https://github.com/Andy2244/openwrt-extra.git"
-FEED_1_PACKAGES="softethervpn-server"
+FEED_1_PACKAGES="softethervpn5-server"
 
 FEED_2="src-link test my_feed"
 FEED_2_PACKAGES="wsdd2"
-
-PATCHES_GITHUB="openwrt/openwrt#1233"
 
 #MENUCONFIG=1
 #DEBUG=1

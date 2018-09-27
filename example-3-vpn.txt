@@ -1,22 +1,14 @@
-### Example: Build (softethervpn-server) from custom feed 'extra', against the 'snapshots' sdk, apply pull request 'openwrt/openwrt#1233' and use default settings, while printing advanced DEBUG output.
+### Example: Build (softethervpn-server) from custom feed 'extra', against the 'snapshots' sdk, use default settings, while printing advanced DEBUG output.
 
 ### ('18.06.0', '18.06.1', 'snapshots')
 VERSION="snapshots"
 TARGET="mvebu"
 SUBTARGET="cortexa9"
 
-# explicitly install/build (ncurses) from official feed, so the patched version from extra feed is not used
-# NOTE: official feeds are processed first so any package and dependencies will be installed first!
-PACKAGES="ncurses"
-
 FEED_1="src-git extra https://github.com/Andy2244/openwrt-extra.git"
-FEED_1_PACKAGES="softethervpn-server"
-
-## patch the official (ncurses) package so softether will compile
-PATCHES_GITHUB="openwrt/openwrt#1233"
+FEED_1_PACKAGES="softethervpn5-server"
 
 #MENUCONFIG=1
 
 # enable advanced output
 DEBUG=1
-
