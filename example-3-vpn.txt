@@ -1,6 +1,6 @@
 ### Example: Build (softethervpn-server) from custom feed 'extra', against the 'snapshots' sdk, use default settings, while printing advanced DEBUG output.
 
-### ('18.06.0', '18.06.1', 'snapshots')
+### ('18.06.0', '18.06.1', '18.06.2' 'snapshots')
 VERSION="snapshots"
 TARGET="mvebu"
 SUBTARGET="cortexa9"

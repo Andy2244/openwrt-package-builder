@@ -1,7 +1,7 @@
 ### Example: Build (vim-full) from official feed, against the 'snapshots' sdk, apply the pull request 6824 (vim: Update to 8.1) and use default settings.
 ### Apply pull request 'openwrt/openwrt#1233'
 
-### ('18.06.0', '18.06.1', 'snapshots')
+### ('18.06.0', '18.06.1', '18.06.2' 'snapshots')
 VERSION="snapshots"
 TARGET="mvebu"
 SUBTARGET="cortexa9"

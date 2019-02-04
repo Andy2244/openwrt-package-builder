@@ -3,7 +3,7 @@
 ## The first line 'openwrt_core' has the sdk VERSION, TARGET, SUBTARGET strings you need to use and replace in this file!
 ## Example: 'src/gz openwrt_core http://downloads.openwrt.org/snapshots/targets/mvebu/cortexa9/packages'
 ################## sdk/target/subtarget ##################
-### ('18.06.0', '18.06.1', 'snapshots') sdk version to use
+### ('18.06.0', '18.06.1', '18.06.2' 'snapshots') sdk version to use
 ## HELP: This "should" match your firmware sdk version.
 VERSION="18.06.1"
 

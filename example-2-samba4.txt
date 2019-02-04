@@ -1,6 +1,6 @@
 ### Example: Build (samba4-server, luci-app-samba4, wsdd2) from custom feed 'extra', against the '18.06.1' sdk and use default settings.
 
-### ('18.06.0', '18.06.1', 'snapshots')
+### ('18.06.0', '18.06.1', '18.06.2' 'snapshots')
 VERSION="18.06.1"
 TARGET="mvebu"
 SUBTARGET="cortexa9"

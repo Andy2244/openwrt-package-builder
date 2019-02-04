@@ -195,7 +195,7 @@ function fix_config_in {
 	sed -e '/Select all target specific packages by default/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
 	sed -e '/Select all kernel module packages by default/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
 	sed -e '/Select all userspace packages by default/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
-	sed -e '/Cryptographically sign package lists/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
+#	sed -e '/Cryptographically sign package lists/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
 	
 	cp "$SDK_DIR"/Config-build.in.org "$SDK_DIR"/Config-build.in
 	if [[ -n $PACKAGES_DISABLE ]]; then
@@ -321,8 +321,7 @@ function install_packages_feeds {
 	"$SDK_DIR/scripts/feeds" update -i 2> "$ERR_OUT" 1> "$STD_OUT"
 	"$SDK_DIR/scripts/feeds" uninstall -a 1> "$STD_OUT"
 	# for signing we need base-files
-	#BUG: get a segfault on debian:stretch-slim
-	#"$SDK_DIR"/scripts/feeds install base-files 1> "$STD_OUT"
+	"$SDK_DIR"/scripts/feeds install base-files 1> "$STD_OUT"
 	
 	install_package "$PACKAGES"
 	install_package "$FEED_1_PACKAGES" $(echo $FEED_1 | cut -d " " -f 2)

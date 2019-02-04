@@ -1,6 +1,6 @@
 ### Example: Re-build 'samba4-server' from official feeds, against the 'snapshots' sdk and allow makeing changes via MENUCONFIG=1 .
 
-### ('18.06.0', '18.06.1', 'snapshots')
+### ('18.06.0', '18.06.1', '18.06.2' 'snapshots')
 VERSION="snapshots"
 TARGET="mvebu"
 SUBTARGET="cortexa9"
