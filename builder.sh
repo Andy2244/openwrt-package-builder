@@ -112,7 +112,7 @@ function prepare_container {
 		$SUDO docker cp "$SCRIPT_DIR/build.in" "${1}:/workdir/build.sh"
 		$SUDO docker cp "$FILE" "${1}:/workdir/"
 		$SUDO docker cp "$SCRIPT_DIR/keys.tar.gz" "${1}:/workdir/"
-		local patches="$(ls "$SCRIPT_DIR/patches-*-${VERSION}.tar.gz" 2>/dev/null)"
+		local patches="$(ls "$SCRIPT_DIR"/patches-*-${VERSION}.tar.gz 2>/dev/null)"
 		local file
 		for file in ${patches[@]}; do
 			if [ -f "$file" ]; then
