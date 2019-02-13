@@ -12,3 +12,6 @@ FEED_1_PACKAGES="softethervpn5-server"
 
 # enable advanced output
 DEBUG=1
+
+# disable signing for snapshots
+DISABLE_SIGNING=1

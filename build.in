@@ -195,7 +195,9 @@ function fix_config_in {
 	sed -e '/Select all target specific packages by default/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
 	sed -e '/Select all kernel module packages by default/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
 	sed -e '/Select all userspace packages by default/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
-#	sed -e '/Cryptographically sign package lists/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
+	if [[ $DISABLE_SIGNING -eq 1 ]]; then
+		sed -e '/Cryptographically sign package lists/!b;n;c\\t\tdefault n' -i "$SDK_DIR"/Config.in
+	fi
 	
 	cp "$SDK_DIR"/Config-build.in.org "$SDK_DIR"/Config-build.in
 	if [[ -n $PACKAGES_DISABLE ]]; then
@@ -320,8 +322,10 @@ function install_package {
 function install_packages_feeds {
 	"$SDK_DIR/scripts/feeds" update -i 2> "$ERR_OUT" 1> "$STD_OUT"
 	"$SDK_DIR/scripts/feeds" uninstall -a 1> "$STD_OUT"
-	# for signing we need base-files
-	"$SDK_DIR"/scripts/feeds install base-files 1> "$STD_OUT"
+	if [[ $DISABLE_SIGNING -ne 1 ]]; then
+		# for signing we need base-files
+		"$SDK_DIR"/scripts/feeds install base-files 1> "$STD_OUT"
+	fi
 	
 	install_package "$PACKAGES"
 	install_package "$FEED_1_PACKAGES" $(echo $FEED_1 | cut -d " " -f 2)

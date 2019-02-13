@@ -59,6 +59,10 @@ FEED_1_PACKAGES="samba4-server luci-app-samba4 wsdd2"
 ## (0,1,2) 0 = basic output, 1 = detailed output, 2 = detailed output + debug output (make V=s)
 #DEBUG=1
 
+## (1) 1 = disable package signing
+## (BUG: 02/2019 snapshot builds will fail via ucert segfault if signing is used, 18.x work with signing enabled)
+#DISABLE_SIGNING=1
+
 ################## optional options ##################
 
 ## list of packages that should be explicitly uninstalled/disabled from default sdk

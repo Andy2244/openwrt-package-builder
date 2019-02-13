@@ -11,3 +11,6 @@ PATCHES_GITHUB="openwrt/packages#6824"
 
 #MENUCONFIG=1
 #DEBUG=1
+
+# disable signing for snapshots
+DISABLE_SIGNING=1
