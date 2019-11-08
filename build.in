@@ -133,16 +133,22 @@ function download_sdk {
 	wget "$TARGETS_URL/sha256sums" -O sha256sums
 	wget "$TARGETS_URL/sha256sums.asc" -O sha256sums.asc
 
-	# LEDE Build System (LEDE GnuPG key for unattended build jobs)
+	# OpenWrt Build System (PGP key for unattended snapshot builds)
 	gpg --import "$SCRIPT_DIR/626471F1.asc"
 	echo '54CC74307A2C6DC9CE618269CD84BCED626471F1:6:' | gpg --import-ownertrust
-	# LEDE Release Builder (17.01 "Reboot" Signing Key)
+	# LEDE 17.01 "Reboot" public key
 	gpg --import "$SCRIPT_DIR/D52BBB6B.asc"
 	echo 'B09BE781AE8A0CD4702FDCD3833C6010D52BBB6B:6:' | gpg --import-ownertrust
-	# OpenWrt Release Builder (18.06 Signing Key)
+	# OpenWrt 18.06 public key
 	gpg --import "$SCRIPT_DIR/17E1CE16.asc"
 	echo '6768C55E79B032D77A28DA5F0F20257417E1CE16:6:' | gpg --import-ownertrust
-
+	# OpenWrt 18.06 public key v2
+	gpg --import "$SCRIPT_DIR/15807931.asc"
+	echo 'AD0507363D2BCE9C9E36CEC4FBCB78F015807931:6:' | gpg --import-ownertrust
+	# OpenWrt 19.07 public key
+	gpg --import "$SCRIPT_DIR/2074BE7A.asc"
+	echo 'D9C6901F45C9B86858687DFF28A39BC32074BE7A:6:' | gpg --import-ownertrust
+	
 	echo_yellow "Verifying sha256sums signature"
 	gpg --verify sha256sums.asc
 	echo_green "Verified sha256sums signature."
