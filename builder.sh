@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Docker based OpenWRT package build environment
 
 RED='\033[1;31m'

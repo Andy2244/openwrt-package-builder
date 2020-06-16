@@ -64,6 +64,12 @@ FEED_1_PACKAGES="samba4-server luci-app-samba4 wsdd2"
 ## (BUG: 02/2019 snapshot builds will fail via ucert segfault if signing is used, 18.x work with signing enabled)
 #DISABLE_SIGNING=1
 
+## override default 'make' build command with up to 4 custom lines.
+#MAKE_CMD1="make package/samba4/compile -j1 V=s"
+#MAKE_CMD2=""
+#MAKE_CMD3=""
+#MAKE_CMD4=""
+
 ################## optional options ##################
 
 ## list of packages that should be explicitly uninstalled/disabled from default sdk

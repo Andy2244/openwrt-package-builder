@@ -68,6 +68,7 @@ function stop_spinner {
 if [[ -f $SCRIPT_DIR/$CONFIG_FILE ]]; then
 	echo_yellow "importing config: $CONFIG_FILE"
 	. "$SCRIPT_DIR/$CONFIG_FILE"
+
 else
 	die "ERROR: file does not exist: $SCRIPT_DIR/$CONFIG_FILE"
 fi
@@ -277,11 +278,22 @@ function build_packages {
 	# always use ccache?
 	# CONFIG_CCACHE=y
 	rm -f "$SCRIPT_DIR/.build_result"
-	if [[ $DEBUG -eq 2 ]]; then
-		CONFIG_CCACHE=y make V=s
+	if [[ -n $MAKE_CMD1 ]]; then
+		echo_yellow "> $MAKE_CMD1"
+		$MAKE_CMD1
+		[[ -n $MAKE_CMD2 ]] && echo_yellow "> $MAKE_CMD2" && $MAKE_CMD2
+		[[ -n $MAKE_CMD3 ]] && echo_yellow "> $MAKE_CMD3" && $MAKE_CMD3
+		[[ -n $MAKE_CMD4 ]] && echo_yellow "> $MAKE_CMD4" && $MAKE_CMD4
 	else
-		CONFIG_CCACHE=y make -j$CPU_CORES
+		if [[ $DEBUG -eq 2 ]]; then
+			echo_yellow "> CONFIG_CCACHE=y make V=s"
+			CONFIG_CCACHE=y make V=s
+		else
+			echo_yellow "> CONFIG_CCACHE=y make -j$CPU_CORES"
+			CONFIG_CCACHE=y make -j$CPU_CORES
+		fi	
 	fi
+	
 	MAKE_RESULT=$?
 	echo "$MAKE_RESULT" > "$SCRIPT_DIR/.build_result"
 	
