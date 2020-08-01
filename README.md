@@ -32,9 +32,10 @@ Mac:
 _For quick installation on Linux try the official Docker [convenience script](https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-using-the-convenience-script)._
 * Get/unpack the script via [release page](https://github.com/Andy2244/openwrt-package-builder/releases) (zip/tar) or ```git clone https://github.com/Andy2244/openwrt-package-builder.git```
 
-Windows: it is recommend to use Docker in 'LCOW' mode, to-do so:
-- check _use Windows Containers instead of Linux Containers_ during installation or _Switch to Windows Containers_ via docker tray
-- enable _Experimental features_ via Docker tray _Settings/Daemon_
+Windows: it is recommend to use Docker in ~~'LCOW' mode, to-do so:~~
+~~- check _use Windows Containers instead of Linux Containers_ during installation or _Switch to Windows Containers_ via docker tray
+- enable _Experimental features_ via Docker tray _Settings/Daemon_~~
+UPDATE: The powershell script should work in normal and WSL1/2 mode, but are untested.
 
 Mac:
 - macOS might ask multiple times per run for your _SUDO_ password, thats because the default _SUDO_ timeout is 5 minutes, which can be changed to 30 minutes via:\
