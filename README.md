@@ -33,8 +33,8 @@ _For quick installation on Linux try the official Docker [convenience script](ht
 * Get/unpack the script via [release page](https://github.com/Andy2244/openwrt-package-builder/releases) (zip/tar) or ```git clone https://github.com/Andy2244/openwrt-package-builder.git```
 
 Windows: it is recommend to use Docker in ~~'LCOW' mode, to-do so:~~
-~~- check _use Windows Containers instead of Linux Containers_ during installation or _Switch to Windows Containers_ via docker tray
-- enable _Experimental features_ via Docker tray _Settings/Daemon_~~
+~~- check _use Windows Containers instead of Linux Containers_ during installation or _Switch to Windows Containers_ via docker tray~~
+~~- enable _Experimental features_ via Docker tray _Settings/Daemon_~~
 UPDATE: The powershell script should work in normal and WSL1/2 mode, but are untested.
 
 Mac:
